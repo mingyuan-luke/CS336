@@ -1,0 +1,27 @@
+# Large data files
+assignment1-basics/data/owt_train.txt
+assignment1-basics/data/TinyStoriesV2-GPT4-train.txt
+assignment1-basics/data/owt_valid.txt
+assignment1-basics/data/TinyStoriesV2-GPT4-valid.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Results (large generated files)
+assignment1-basics/results/tokenized/
+
+# Jupyter
+.ipynb_checkpoints/
