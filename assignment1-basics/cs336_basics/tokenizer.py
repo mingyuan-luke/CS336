@@ -3,6 +3,7 @@ import regex as re
 from tests.common import gpt2_bytes_to_unicode
 import json
 import time
+import numpy as np
 
 PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
@@ -172,41 +173,42 @@ class Tokenizer:
 if __name__ == "__main__":
     # tokenizer = Tokenizer.from_files("tests/fixtures/gpt2_vocab.json", "tests/fixtures/gpt2_merges.txt", special_tokens=["<|endoftext|>", "<|endoftext|><|endoftext|>"])
 
-    tokenizer = Tokenizer.from_files("results/vocab_parallel_ts.json", "results/merges_parallel_ts.txt", special_tokens=["<|endoftext|>"])
-    # tokenizer = Tokenizer.from_files("results/vocab_parallel_owt.json", "results/merges_parallel_owt.txt", special_tokens=["<|endoftext|>"])
+    # tokenizer = Tokenizer.from_files("results/vocab_parallel_ts.json", "results/merges_parallel_ts.txt", special_tokens=["<|endoftext|>"])
+    tokenizer = Tokenizer.from_files("results/vocab_parallel_owt.json", "results/merges_parallel_owt.txt", special_tokens=["<|endoftext|>"])
     # text = "Hello, world! <PAD> This is a test."
     # test_string = "Hello, how <|endoftext|><|endoftext|> are you?<|endoftext|>"
 
     # use assignment1-basics/data/tinystories_10_sample.txt as test string
     # with open("data/owt_valid.txt", "r", encoding="utf-8") as f:
-    with open("data/TinyStoriesV2-GPT4-valid.txt") as f:
+    # with open("data/owt_train.txt", "r", encoding="utf-8") as f:
+    # with open("data/TinyStoriesV2-GPT4-valid.txt") as f:
+    # with open("data/TinyStoriesV2-GPT4-train.txt", "r", encoding="utf-8") as f:
     # with open("data/encode/tinystories_10_sample.txt", "r", encoding="utf-8") as f:
-        test_string = f.read()
-
-    # ids = tokenizer.encode(test_string) # warmup
-
-    t0 = time.perf_counter()
-    ids = tokenizer.encode(test_string)
-    t1 = time.perf_counter()
-    print(f"Encoding time: {t1 - t0:.4f} seconds")
-
-    # calculate encoding speed, bytes/s
-    encoding_speed = len(test_string.encode("utf-8")) / (t1 - t0)
-    print(f"Encoding speed: {encoding_speed:.2f} bytes/second")
-
+        # test_string = f.read()
+    # ids = tokenizer.encode(test_string)
     # use uint16 numpy数组存储这些token id，写入文件
-    # import numpy as np
     # ids_array = np.array(ids, dtype=np.uint16)
-    # np.save("results/tokenized/tinystories_10_sample.npy", ids_array)
+    # np.save("results/owt_train.npy", ids_array)
 
     # tokenized_string = [tokenizer.decode([x]) for x in ids]
-
-    # write the tokenized_string to a file
-    # with open("results/tokenized/tinystories_10_sample.txt", "w", encoding="utf-8") as f:
-    # with open("results/tokenized/owt_10_sample_with_ts_vocab.txt", "w", encoding="utf-8") as f:
-    #     for token in tokenized_string:
-    #         f.write(token + "\n")
     # compress_ratio = len(test_string.encode("utf-8")) / len(ids)
     # print(f"Compression ratio: {compress_ratio:.2f} (original bytes / tokenized ids)")
     # print(f"Tokenized string: {tokenized_string}")
     # print(tokenizer.decode(ids) == test_string)
+
+    t0 = time.perf_counter()
+
+    # use np.fromiter to create the array directly from the iterator
+    with open("data/owt_train.txt", "r", encoding="utf-8") as file:
+        ids_array = np.fromiter(
+            tokenizer.encode_iterable(file),
+            dtype=np.uint16,
+        )
+    np.save("results/owt_train.npy", ids_array)
+    # print(f"Number of tokens: {len(ids_array)}")
+    t1 = time.perf_counter()
+    print(f"Encoding time: {t1 - t0:.4f} seconds")
+
+    # calculate encoding speed, bytes/s
+    # encoding_speed = len(test_string.encode("utf-8")) / (t1 - t0)
+    # print(f"Encoding speed: {encoding_speed:.2f} bytes/second")
