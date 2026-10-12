@@ -212,8 +212,17 @@ def run_rope(
     Returns:
         Float[Tensor, " ... sequence_length d_k"]: Tensor with RoPEd input.
     """
-    raise NotImplementedError
+    from cs336_basics.rope import RotaryPositionalEmbedding
 
+    rope = RotaryPositionalEmbedding(theta=theta, d_k=d_k, max_seq_len=max_seq_len, device=in_query_or_key.device)
+    cos, sin = rope(in_query_or_key, token_positions)
+    return (in_query_or_key * cos) + (rotate_half(in_query_or_key) * sin)
+
+def rotate_half(x: torch.Tensor) -> torch.Tensor:
+    x1 = x[..., ::2]  # even indices
+    x2 = -x[..., 1::2]  # odd indices
+    # concat x2[0], x1[0], x2[1], x1[1], ... along the last dimension
+    return torch.stack((x2, x1), dim=-1).flatten(-2)
 
 def run_transformer_block(
     d_model: int,
