@@ -8,7 +8,7 @@ class SwiGLU(nn.Module):
     # w2_weight: Float[Tensor, " d_model d_ff"],
     # w3_weight: Float[Tensor, " d_ff d_model"],
     # in_features: Float[Tensor, " ... d_model"],
-    def __init__(self, d_ff, d_model):
+    def __init__(self, d_ff: int, d_model: int):
         super(SwiGLU, self).__init__()
         # w1, w2, and w3 are the weight matrices for the SwiGLU layer
         # no bias
@@ -16,7 +16,7 @@ class SwiGLU(nn.Module):
         self.w3 = nn.Linear(d_model, d_ff, bias=False)
         self.w2 = nn.Linear(d_ff, d_model, bias=False)
         
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x1: (..., d_ff)
         x1 = self.w1(x)
         # use sigmoid for silu， x2: (..., d_ff)

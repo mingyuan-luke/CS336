@@ -310,7 +310,35 @@ def run_transformer_block(
         Float[Tensor, "batch sequence_length d_model"] Tensor with the output of
         running the Transformer block on the input features while using RoPE.
     """
-    raise NotImplementedError
+    from cs336_basics.transformer_block import TransformerBlock
+    block = TransformerBlock(
+        d_model=d_model,
+        num_heads=num_heads,
+        d_ff=d_ff,
+        max_seq_len=max_seq_len,
+        theta=theta
+    )
+    block.attn.load_state_dict({
+        'q_proj.weight': weights['attn.q_proj.weight'],
+        'k_proj.weight': weights['attn.k_proj.weight'],
+        'v_proj.weight': weights['attn.v_proj.weight'],
+        'o_proj.weight': weights['attn.output_proj.weight']
+    })
+    block.ff.load_state_dict({
+        'w1.weight': weights['ffn.w1.weight'],
+        'w2.weight': weights['ffn.w2.weight'],
+        'w3.weight': weights['ffn.w3.weight']
+    })
+    block.rmsnorm1.load_state_dict({
+        'scale': weights['ln1.weight']
+    })
+    block.rmsnorm2.load_state_dict({
+        'scale': weights['ln2.weight']
+    })
+
+    # use all token positions by default
+    token_positions = torch.arange(in_features.size(1), device=in_features.device).unsqueeze(0).expand(in_features.size(0), -1)
+    return block(in_features, token_positions=token_positions)
 
 
 def run_transformer_lm(

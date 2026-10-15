@@ -27,7 +27,6 @@ class RotaryPositionalEmbedding(nn.Module):
 
     def forward(self, x: torch.Tensor, token_positions: torch.Tensor) -> torch.Tensor:
         # x (..., sequence_length, d_k)
-
         cos = self.cos_cached[token_positions, :].unsqueeze(0) # shape (1, sequence_length, d_k)
         sin = self.sin_cached[token_positions, :].unsqueeze(0)
         return cos, sin
@@ -38,5 +37,12 @@ def rotate_half(x: torch.Tensor) -> torch.Tensor:
     x2 = -x[..., 1::2]  # odd indices
     # concat x2[0], x1[0], x2[1], x1[1], ... along the last dimension
     return torch.stack((x2, x1), dim=-1).flatten(-2)
+
+# apply rope
+def run_rope(d_k: int, theta: float, max_seq_len: int, in_query_or_key: torch.Tensor, token_positions: torch.Tensor) -> torch.Tensor:
+    # in_query_or_key (..., sequence_length, d_k)
+    rope = RotaryPositionalEmbedding(theta=theta, d_k=d_k, max_seq_len=max_seq_len, device=in_query_or_key.device)
+    cos, sin = rope(in_query_or_key, token_positions)
+    return (in_query_or_key * cos) + (rotate_half(in_query_or_key) * sin)
 
 
