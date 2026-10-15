@@ -337,8 +337,8 @@ def run_transformer_block(
     })
 
     # use all token positions by default
-    token_positions = torch.arange(in_features.size(1), device=in_features.device).unsqueeze(0).expand(in_features.size(0), -1)
-    return block(in_features, token_positions=token_positions)
+    # token_positions = torch.arange(in_features.size(1), device=in_features.device).unsqueeze(0).expand(in_features.size(0), -1)
+    return block(in_features)
 
 
 def run_transformer_lm(
@@ -420,8 +420,27 @@ def run_transformer_lm(
         Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
         next-word distribution for each token.
     """
-    raise NotImplementedError
 
+    from cs336_basics.transformer_lm import TransformerLM
+    transformer_lm =  TransformerLM(vocab_size, context_length, d_model, num_layers, num_heads, d_ff, rope_theta)
+    transformer_lm.token_embeddings.load_state_dict({"weight": weights["token_embeddings.weight"]})
+    for i in range(num_layers):
+        transformer_lm.layers[i].rmsnorm1.load_state_dict({"scale": weights[f"layers.{i}.ln1.weight"]})
+        transformer_lm.layers[i].attn.load_state_dict({
+            "q_proj.weight": weights[f"layers.{i}.attn.q_proj.weight"],
+            "k_proj.weight": weights[f"layers.{i}.attn.k_proj.weight"],
+            "v_proj.weight": weights[f"layers.{i}.attn.v_proj.weight"],
+            "o_proj.weight": weights[f"layers.{i}.attn.output_proj.weight"]
+        })
+
+        transformer_lm.layers[i].ff.w1.load_state_dict({"weight": weights[f"layers.{i}.ffn.w1.weight"]})
+        transformer_lm.layers[i].ff.w2.load_state_dict({"weight": weights[f"layers.{i}.ffn.w2.weight"]})
+        transformer_lm.layers[i].ff.w3.load_state_dict({"weight": weights[f"layers.{i}.ffn.w3.weight"]})
+        transformer_lm.layers[i].rmsnorm2.load_state_dict({"scale": weights[f"layers.{i}.ln2.weight"]})
+    transformer_lm.rmsnorm.load_state_dict({"scale": weights["ln_final.weight"]})
+    transformer_lm.output_linear.load_state_dict({"weight": weights["lm_head.weight"]})
+
+    return transformer_lm(in_indices)
 
 def run_rmsnorm(
     d_model: int,
