@@ -1,6 +1,6 @@
 import os
 import torch
-import random
+import time
 import wandb
 import numpy as np
 from cs336_basics.get_batch import get_batch
@@ -92,7 +92,12 @@ run = wandb.init(
     },
 )
 
+# clear train log
+if os.path.exists(LOG_FILE):
+    open(LOG_FILE, "w").close()
+
 # train loop
+start_time = time.time()
 for epoch in range(EPOCHS):
     for iter in range(MAX_ITER):
         # get batches for training using get_batch function
@@ -118,10 +123,11 @@ for epoch in range(EPOCHS):
 
         # record training loss, print time elapsed
         if iter % LOG_INTERVAL == 0:
-            print(f"Epoch [{epoch}/{EPOCHS}], Iter [{iter}/{MAX_ITER}], Loss: {loss.item()}")
+            print(f"Epoch [{epoch}/{EPOCHS}], Iter [{iter}/{MAX_ITER}], Loss: {loss.item()}, Time: {time.time() - start_time}")
             with open(LOG_FILE, "a") as f:
-                f.write(f"Epoch [{epoch}/{EPOCHS}], Iter [{iter}/{MAX_ITER}], Loss: {loss.item()}\n")
+                f.write(f"Epoch [{epoch}/{EPOCHS}], Iter [{iter}/{MAX_ITER}], Loss: {loss.item()}, Time: {time.time() - start_time}\n")
             run.log({"train_loss": loss.item(), "iter": iter})
+            start_time = time.time()
 
         # 将检查点序列化到用户提供的路径
         if iter % CKPT_INTERVAL == 0 or iter == MAX_ITER - 1:
@@ -143,9 +149,9 @@ for epoch in range(EPOCHS):
             val_outputs = val_outputs.view(-1, val_outputs.size(-1))
             val_targets = val_targets.view(-1)
             val_loss = LOSS_CE(val_outputs, val_targets)
-            print(f"Validation Loss: {val_loss.item()}")
+            print(f"Epoch [{epoch}/{EPOCHS}], Iter [{iter}/{MAX_ITER}], Validation Loss: {val_loss.item()}")
             with open(LOG_FILE, "a") as f:
-                f.write(f"Validation Loss: {val_loss.item()}\n")
+                f.write(f"Epoch [{epoch}/{EPOCHS}], Iter [{iter}/{MAX_ITER}], Validation Loss: {val_loss.item()}\n")
             # record iteration and validation loss to wandb
             run.log({"val_loss": val_loss.item(), "iter": iter})
 
