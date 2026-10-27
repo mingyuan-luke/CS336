@@ -20,20 +20,20 @@ VAL_DATA = "results/ts_valid.npy"
 CHECKPOINT_PATH = "results/checkpoints"
 # Periodically logging training and validation performance
 LOG_INTERVAL = 100
-# Number of training iterations
-MAX_ITER = 10000
 # save ckpt periodically during training
 CKPT_INTERVAL = 1000
 # Interval for performing validation during training
 VAL_INTERVAL = 500  # Interval for validation during training
-# Batch size for training
-BATCH_SIZE = 32
-# Number of epochs for training
-EPOCHS = 10
+
 # Logging configuration
 LOG_FILE = "results/training.log"
 # device for training (e.g., "cpu" or "cuda" or "mps")
 DEVICE = "mps"  # Change to "cuda" or "mps" if available
+
+# run param
+BATCH_SIZE = 32
+EPOCHS = 4
+MAX_ITER = 10000 # every epoch maximum iterations
 
 # model hyperparameters
 VOCAB_SIZE = 10000  # Example vocab size, replace with actual
