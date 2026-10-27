@@ -26,9 +26,20 @@ class RotaryPositionalEmbedding(nn.Module):
 
 
     def forward(self, x: torch.Tensor, token_positions: torch.Tensor) -> torch.Tensor:
-        # x (..., sequence_length, d_k)
-        cos = self.cos_cached[token_positions, :].unsqueeze(0) # shape (1, sequence_length, d_k)
-        sin = self.sin_cached[token_positions, :].unsqueeze(0)
+        positions = token_positions.to(
+            device=self.cos_cached.device, dtype=torch.long
+        )
+        cos = self.cos_cached[positions]
+        sin = self.sin_cached[positions]
+
+        # 四维 x + 二维 positions：补上 head 维
+        if x.ndim == 4 and token_positions.ndim == 2:
+            cos = cos.unsqueeze(1)
+            sin = sin.unsqueeze(1)
+
+        cos = cos.to(device=x.device, dtype=x.dtype).expand_as(x)
+        sin = sin.to(device=x.device, dtype=x.dtype).expand_as(x)
+
         return cos, sin
 
 

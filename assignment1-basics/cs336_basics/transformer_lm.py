@@ -31,6 +31,6 @@ class TransformerLM(nn.Module):
         for layer in self.layers:
             x = layer(x, token_positions=token_positions)
         x = self.rmsnorm(x)
-        x = self.output_linear(x)
+        x = self.output_linear(x) # shape: (batch_size, context_length, vocab_size)
         # x = self.softmax(x)
         return x
