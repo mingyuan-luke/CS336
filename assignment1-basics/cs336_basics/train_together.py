@@ -10,11 +10,7 @@ from cs336_basics.cross_entropy import CrossEntropyLoss
 from cs336_basics.gradient_clipping import gradient_clipping
 
 # Ability to configure and control the various model and optimizer hyperparameters
-MODEL = "first_model"
-LR = 1e-3
-BETAS = (0.9, 0.999)
-EPS = 1e-8
-WEIGHT_DECAY = 0.01
+EXP_NAME = "first_model"
 
 # Memory-efficient loading of large training and validation datasets with np.memmap
 TRAIN_DATA = "results/ts_train.npy"
@@ -34,24 +30,30 @@ VAL_INTERVAL = 500  # Interval for validation during training
 BATCH_SIZE = 32
 # Number of epochs for training
 EPOCHS = 10
-# context legnth
-CONTEXT_LENGTH = 50
 # Logging configuration
 LOG_FILE = "results/training.log"
 # device for training (e.g., "cpu" or "cuda" or "mps")
 DEVICE = "mps"  # Change to "cuda" or "mps" if available
 
 # model hyperparameters
+VOCAB_SIZE = 10000  # Example vocab size, replace with actual
+CONTEXT_LENGTH = 256
 D_MODEL = 512
-NUM_LAYERS = 6
-NUM_HEADS = 8
-D_FF = 2048
+NUM_LAYERS = 4
+NUM_HEADS = 16
+D_FF = 1344
 ROPE_THETA = 10000.0
+
+# optimizer
+LR = 1e-4
+BETAS = (0.9, 0.999)
+EPS = 1e-8
+WEIGHT_DECAY = 0.01
 
 # initialize model and optimizer
 # vocab_size: int, context_length: int, d_model: int, num_layers: int, num_heads: int, d_ff: int, rope_theta: float
 MODEL = TransformerLM(
-    vocab_size=10000,  # Example vocab size, replace with actual
+    vocab_size=VOCAB_SIZE,  # Example vocab size, replace with actual
     context_length=CONTEXT_LENGTH,
     d_model=D_MODEL,
     num_layers=NUM_LAYERS,
