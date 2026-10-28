@@ -21,7 +21,8 @@ build/
 .idea/
 
 # Results (large generated files)
-assignment1-basics/results/tokenized/
+assignment1-basics/results/
+assignment1-basics/wandb
 
 # Jupyter
 .ipynb_checkpoints/

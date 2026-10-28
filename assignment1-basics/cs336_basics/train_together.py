@@ -8,6 +8,7 @@ from cs336_basics.transformer_lm import TransformerLM
 from cs336_basics.adamw import AdamW
 from cs336_basics.cross_entropy import CrossEntropyLoss
 from cs336_basics.gradient_clipping import gradient_clipping
+from cs336_basics.lr_cosine_schedule import lr_cosine_schedule
 
 # Ability to configure and control the various model and optimizer hyperparameters
 EXP_NAME = "first_model"
@@ -32,8 +33,8 @@ DEVICE = "mps"  # Change to "cuda" or "mps" if available
 
 # run param
 BATCH_SIZE = 32
-EPOCHS = 4
-MAX_ITER = 10000 # every epoch maximum iterations
+EPOCHS = 1
+MAX_ITER = 5000 # every epoch maximum iterations
 
 # model hyperparameters
 VOCAB_SIZE = 10000  # Example vocab size, replace with actual
@@ -45,10 +46,14 @@ D_FF = 1344
 ROPE_THETA = 10000.0
 
 # optimizer
-LR = 1e-4
+LR_MAX = 1e-4
+LR_MIN = 1e-5
+WARMUP_STEPS = 300
+TOTAL_STEPS = EPOCHS * MAX_ITER
 BETAS = (0.9, 0.999)
 EPS = 1e-8
 WEIGHT_DECAY = 0.01
+
 
 # initialize model and optimizer
 # vocab_size: int, context_length: int, d_model: int, num_layers: int, num_heads: int, d_ff: int, rope_theta: float
@@ -62,7 +67,7 @@ MODEL = TransformerLM(
     rope_theta=ROPE_THETA
 )
 MODEL.to(DEVICE)
-OPTIMIZER = AdamW(MODEL.parameters(), lr=LR, betas=BETAS, eps=EPS, weight_decay=WEIGHT_DECAY)
+OPTIMIZER = AdamW(MODEL.parameters(), lr=LR_MAX, betas=BETAS, eps=EPS, weight_decay=WEIGHT_DECAY)
 LOSS_CE = CrossEntropyLoss()
 # 文件头不能被当作 token, dtype uint16, 内存映射模式
 get_train_data = np.load(TRAIN_DATA, mmap_mode='r')
@@ -80,7 +85,7 @@ run = wandb.init(
     project="cs336",
     # Track hyperparameters and run metadata.
     config={
-        "learning_rate": LR,
+        "learning_rate": LR_MAX,
         "architecture": "TransformerLM",
         "dataset": "TinyStoriesV2",
         "epochs": EPOCHS,
@@ -101,7 +106,9 @@ if os.path.exists(LOG_FILE):
 # train loop
 start_time = time.time()
 for epoch in range(EPOCHS):
-    for iter in range(MAX_ITER):
+    for it in range(MAX_ITER):
+        iter = epoch * MAX_ITER + it
+        
         # get batches for training using get_batch function
         batch = get_batch(get_train_data, BATCH_SIZE, CONTEXT_LENGTH, DEVICE)
         # conversion for inputs and targets，torch.long
@@ -116,8 +123,17 @@ for epoch in range(EPOCHS):
         targets = targets.view(-1) # shape: (batch_size * context_length)
         loss = LOSS_CE(outputs, targets)
         loss.backward()
+        
         # Gradient clipping
         gradient_clipping(MODEL.parameters(), max_l2_norm=1.0)
+
+        # update learning rate according to cosine schedule
+        if 'OPTIMIZER' in globals():
+            # step_t, lr_max, lr_min, warmup_steps, total_steps
+            lr_iter = lr_cosine_schedule(iter, LR_MAX, LR_MIN, WARMUP_STEPS, TOTAL_STEPS)
+            for param_group in OPTIMIZER.param_groups:
+                param_group['lr'] = lr_iter
+
         # Assuming an optimizer is defined, e.g., OPTIMIZER.step() and OPTIMIZER.zero_grad() would be called here
         if 'OPTIMIZER' in globals():
             OPTIMIZER.step()
@@ -132,7 +148,7 @@ for epoch in range(EPOCHS):
             start_time = time.time()
 
         # 将检查点序列化到用户提供的路径
-        if iter % CKPT_INTERVAL == 0 or iter == MAX_ITER - 1:
+        if iter % CKPT_INTERVAL == 0 or iter == TOTAL_STEPS - 1:
             os.makedirs(CHECKPOINT_PATH, exist_ok=True)
             torch.save({
                 'epoch': epoch,
@@ -142,7 +158,7 @@ for epoch in range(EPOCHS):
             }, f"{CHECKPOINT_PATH}/checkpoint_epoch_{epoch}_iter_{iter}.pth")
 
         # 验证性能（例如，到控制台和/或像 Weights and Biases 这样的外部服务
-        if iter % VAL_INTERVAL == 0 or iter == MAX_ITER - 1:
+        if iter % VAL_INTERVAL == 0 or iter == TOTAL_STEPS - 1:
             val_batch = get_batch(get_val_data, BATCH_SIZE, CONTEXT_LENGTH, DEVICE)
             val_inputs, val_targets = val_batch
             val_inputs = val_inputs.to(torch.long)
